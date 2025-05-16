@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Крестики-Нолики</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: white;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .status {
+            font-size: 24px;
+            margin-bottom: 20px;
+            height: 30px;
+        }
+        
+        .restart-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .x {
+            color: #FF5722;
+        }
+        
+        .o {
+            color: #2196F3;
+        }
+        
+        .win {
+            background-color: #E8F5E9;
+        }
+        
+        .score {
+            display: flex;
+            justify-content: space-between;
+            width: 300px;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Крестики-Нолики</h1>
+    
+    <div class="game-container">
+        <div class="score">
+            <span>X: <span id="score-x">0</span></span>
+            <span>Ничья: <span id="score-tie">0</span></span>
+            <span>O: <span id="score-o">0</span></span>
+        </div>
+        
+        <div class="status" id="status">Ход игрока X</div>
+        
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        
+        <button class="restart-btn" id="restart-btn">Начать заново</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('board');
+            const cells = document.querySelectorAll('.cell');
+            const status = document.getElementById('status');
+            const restartBtn = document.getElementById('restart-btn');
+            const scoreX = document.getElementById('score-x');
+            const scoreO = document.getElementById('score-o');
+            const scoreTie = document.getElementById('score-tie');
+            
+            let currentPlayer = 'X';
+            let gameState = ['', '', '', '', '', '', '', '', ''];
+            let gameActive = true;
+            let scores = {
+                X: 0,
+                O: 0,
+                tie: 0
+            };
+            
+            const winningConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ];
+            
+            function handleCellClick(clickedCellEvent) {
+                const clickedCell = clickedCellEvent.target;
+                const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+                
+                if (gameState[clickedCellIndex] !== '' || !gameActive) {
+                    return;
+                }
+                
+                gameState[clickedCellIndex] = currentPlayer;
+                clickedCell.textContent = currentPlayer;
+                clickedCell.classList.add(currentPlayer.toLowerCase());
+                
+                checkForWin();
+                checkForDraw();
+                
+                if (gameActive) {
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    status.textContent = `Ход игрока ${currentPlayer}`;
+                }
+            }
+            
+            function checkForWin() {
+                let roundWon = false;
+                let winningLine = null;
+                
+                for (let i = 0; i < winningConditions.length; i++) {
+                    const [a, b, c] = winningConditions[i];
+                    const condition = gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c];
+                    
+                    if (condition) {
+                        roundWon = true;
+                        winningLine = winningConditions[i];
+                        break;
+                    }
+                }
+                
+                if (roundWon) {
+                    status.textContent = `Игрок ${currentPlayer} победил!`;
+                    gameActive = false;
+                    
+                    // Highlight winning cells
+                    if (winningLine) {
+                        winningLine.forEach(index => {
+                            cells[index].classList.add('win');
+                        });
+                    }
+                    
+                    // Update score
+                    scores[currentPlayer]++;
+                    updateScoreDisplay();
+                    
+                    return;
+                }
+            }
+            
+            function checkForDraw() {
+                if (!gameState.includes('') && gameActive) {
+                    status.textContent = 'Ничья!';
+                    gameActive = false;
+                    scores.tie++;
+                    updateScoreDisplay();
+                }
+            }
+            
+            function updateScoreDisplay() {
+                scoreX.textContent = scores.X;
+                scoreO.textContent = scores.O;
+                scoreTie.textContent = scores.tie;
+            }
+            
+            function restartGame() {
+                currentPlayer = 'X';
+                gameState = ['', '', '', '', '', '', '', '', ''];
+                gameActive = true;
+                status.textContent = `Ход игрока ${currentPlayer}`;
+                
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.classList.remove('x', 'o', 'win');
+                });
+            }
+            
+            // Event listeners
+            cells.forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+            
+            restartBtn.addEventListener('click', restartGame);
+        });
+    </script>
+</body>
+</html>
